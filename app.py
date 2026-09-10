@@ -32,6 +32,7 @@ from tools.wams_analytics import (
     simulate_enos_drought, simulate_tnep_ac,
 )
 from tools.cenace_client import fetch_cenace_realtime
+from tools.live_panels import panel_cenace_tiempo_real, panel_embalses_celecsur, panel_intercambio_xm
 
 # ---------------------------------------------------------------------------
 # CONFIG
@@ -395,6 +396,9 @@ def render_tab_geracao(settings):
 def render_tab_hidrologia(settings):
     ano = settings["ano"]
     st.subheader("🌊 Hidrología y Embalses — Complejo Paute y Nacional")
+    panel_embalses_celecsur(dias_historico=90)
+    st.markdown("---")
+    st.markdown("#### 🧪 Modelo didáctico de niveles (sintético calibrado)")
 
     st.markdown(
         "Ecuador depende **~72-90%** de la generación hidroeléctrica. "
@@ -549,17 +553,10 @@ def render_tab_carga(settings):
     janela_dias = int(settings["janela"].split()[0])
     st.subheader("📈 Carga y Demanda — Tiempo Real e Histórico")
 
-    # Datos tiempo real
-    rt = fetch_cenace_realtime()
-    st.markdown(f"**🕐 Última actualización:** {rt['timestamp'][:19]}")
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Demanda actual", f"{rt['demanda_mw']:,.0f} MW")
-    c2.metric("Hidro", f"{rt['hidro_mw']:,.0f} MW ({rt['hidro_pct']}%)")
-    c3.metric("Térmica", f"{rt['termo_mw']:,.0f} MW")
-    c4.metric("Import. Colombia", f"{rt['import_col_mw']:,.0f} MW")
-
-    st.markdown(f"**Estado del sistema:** {'🟢 Normal' if rt['estado']=='normal' else '🟡 Alerta'} "
-                f"| Cota Mazar: {rt['embalse_mazar_cota']} m.s.n.m.")
+    # Datos tiempo real (REALES: CENACE SCADA, parser Plotly)
+    rt = panel_cenace_tiempo_real(mostrar_curvas=True, mostrar_distribuidoras=True)
+    st.markdown("---")
+    st.markdown("#### 🧪 Modelo didáctico (perfil sintético calibrado)")
 
     # Perfil de demanda
     st.markdown(f"#### 📉 Perfil de Demanda — Últimos {janela_dias} días")
@@ -603,11 +600,11 @@ def render_tab_carga(settings):
     # Fuentes API
     st.markdown("---")
     st.markdown("#### 🔗 Fuentes de datos CENACE")
-    st.caption("Endpoint: `cenace.org.ec/docs/InformacionOperativa.htm` | Datos abiertos: `datosabiertos.gob.ec`")
+    st.caption("Endpoints reales: `cenace.gob.ec/info-operativa/InformacionOperativa.htm` (Plotly JSON) · `generacioncsr.celec.gob.ec:8443/ords/csr/sardomcsr` (CELEC Sur) · API XM `pydataxm` · `datosabiertos.gob.ec/dataset/?organization=cenace`")
     st.text("  ✅ Producción de Energía Eléctrica del Parque Generador (CSV/XLSX)")
     st.text("  ✅ Potencia Efectiva de Generación en el SNI (CSV/XLSX)")
     st.text("  ✅ Capacidad Instalada del SNI (CSV/XLSX)")
-    st.text("  ✅ Información Operativa en Tiempo Real (imágenes horarias)")
+    st.text("  ✅ Información Operativa en Tiempo Real (18 figuras Plotly, 30 min)")
 
     # ─── SIMULADOR INTERACTIVO: CRECIMIENTO DE DEMANDA ───
     st.markdown("---")
@@ -665,6 +662,8 @@ def render_tab_carga(settings):
 def render_tab_intercambio(settings):
     ano = settings["ano"]
     st.subheader("🔄 Intercambio Internacional — Colombia y Perú")
+    panel_intercambio_xm(dias=30)
+    st.markdown("---")
 
     st.markdown(
         "Ecuador está interconectado con **Colombia** (230 kV, 525 MW) y **Perú** (230 kV, 110 MW). "
